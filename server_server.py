@@ -16,7 +16,7 @@ class Server:
         # Defines server ID
         self.serverID = str(Server.server_ID)
         self.increase_ID()
-        self.itens = {}
+        self.itens = {} # Key: item ID. Value: [[WarehouseID, Qtt], [WarehouseID, Qtt] ]
         self.all_itens_id = []
 
         # # # # # COMMUNICATION # # # # #
@@ -79,6 +79,8 @@ s    @classmethod
             self.update_server(message[1:])
         elif ('1' == message[0]):
             self.update_self(message[1:])
+        elif ('2' == message[0]):
+            self.warehouse_update(message[1:])
 
     def read_logfile(self, logfile):
         while ('' != logfile):
@@ -129,6 +131,53 @@ s    @classmethod
         """
         print("Updating self")
 
+    def warehouse_update(self, message):
+        """
+        Updates the server with message from warehouse.
+        Messages from warehouse have the following format, defined in util_app_protocol.py:
+            #Message: WarehouseID;ItemID;ItemName;Qtt. If Qtt > 0, adding item. If qtt < 0, removing item.
+        """
+        # Separate data
+        message = message.split(space_char)
+
+        # Gets data from msg
+        warehouse_ID = message[0]
+        item_ID = message[1]
+        item_name = message[2]
+        qtt = message[3]
+        value = [warehouse_ID, qtt, item_name]
+
+
+        # If item is on server, checks if there's data about that warehouse already.
+        # If there is, update qtt.
+        # If not, create list containing warehouse.
+        # If item isn't on server, create item.
+
+        #Checks if item is in the server
+        if (item_ID in self.itens):
+            index = -1
+            # Checks if warehouse is present and find its index.
+            for warehouse in self.itens[item_ID]:
+                if (warehouse[0] == warehouse_ID):
+                    index = self.itens[item_ID].index(warehouse)
+                    break;
+            
+            # If warehouse is present    
+            if (index != -1):
+                # Updates qtt. If qtt*-1 > actual qtt, means remove all items.
+                if (qtt*-1 >= self.itens[item_ID][1]):
+                    self.itens[item_ID][index][1] = 0
+                # If not to remove all, update qtt:
+                else:
+                    self.itens[item_ID][index][1] += qtt
+            # If warehouse is not present, adds warehouse
+            else:
+                self.itens[item_ID].append(value)
+        # If item isn't on server
+        else:
+            # Adds item to dictionary
+            self.itens[itemID] = [value]
+        
 
 server = Server()
 print("ID classe:" + str(Server.server_ID))
