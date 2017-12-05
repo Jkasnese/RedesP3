@@ -97,7 +97,7 @@ def listen_TCP(bocal):
         # Seja educado e responda
         return mensagem        
 
-def acept_connections(bocal, lista_conexoes):
+def accept_connections(bocal, lista_conexoes):
     # Ouvindo
     while True:
         # Coloca na lista uma tupla contendo bocal de conexão e endereço
