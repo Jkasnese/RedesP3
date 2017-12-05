@@ -16,8 +16,8 @@ class Server:
         # Defines server ID
         self.serverID = str(Server.server_ID)
         self.increase_ID()
-        self.itens = {} # Key: item ID. Value: [[WarehouseID, Qtt], [WarehouseID, Qtt] ]
-        self.all_itens_id = []
+        self.itens = {} # Key: item ID. Value: [[item_Name], [WarehouseID, Qtt], [WarehouseID, Qtt] ]
+        self.itens_list = []
 
         # # # # # COMMUNICATION # # # # #
         # # UDP
@@ -26,7 +26,7 @@ class Server:
         thread_listen_group = Thread(target = self.listen_messages, args=())
         thread_listen_group.start()
 
-        # # # # # SERVER DATA # # # # # 
+        # # # # # SERVER LOG # # # # # 
         # Log file.
         # Appends new logs to file in case it exists, meaning the server lost connection, and attempts to recover lost messages during disconnect time
         # If it doesn't exists means that it's a new server with consistent DB. Creates log file with server ID on the first line
@@ -52,26 +52,38 @@ s    @classmethod
         self.my_ip_addr = input("Digite seu IP: ")
         return create_multicast_socket(self.group, self.port, self.my_ip_addr)
 
-    def listen_messages(self):
+    def listen_messages(self, sock):
         """
         Listen for incoming messages to the sock in arguments.
         """
         message = "@"
         while ('' != message):
             print("Waiting msgs...")
-            message, addr = listen_socket(self.server_multicast_socket)
-            # If it's an UDP socket, it received (msg,addr). If it's TCP, only (msg). Hence:
-            #if ('' == message): # Empty string '' means that the other contact closed the socket
-             #   break; # Doesn't really applies to UDP but could be used by TCP
-            #else: 
+            message, addr = listen_socket(sock)
+
+            if ('' == message): # Empty string '' means that the other contact closed the socket
+                break; # Doesn't really applies to UDP but could be used by TCP
+            else: 
+                print("Reading message... ")
+                print(message)
+
                 # If it's a valid message, pass to handle_message so it can be, well... handled.
-            print("Reading message... ")
-            print(message)
-            self.handle_message(message)
-                            
+                # If its UDP, its a server action. If it's TCP, must respond
+                # If it's an UDP socket, it received (msg,addr). If it's TCP, only:                
+                if (None == addr):
+                    self.handle_message(message, sock)
+                else:
+                    self.handle_message(message)
+
         sock.close()
 
-    def handle_message(self, message):
+    def listen_client(self):
+        """
+        Listen to messages that came from a client
+        """
+        
+
+    def handle_message(self, message, sock=None):
         """
         Receives a message and treats it accordingly to the application protocol defined in util_app_protocol.py
         """
@@ -81,6 +93,8 @@ s    @classmethod
             self.update_self(message[1:])
         elif ('2' == message[0]):
             self.warehouse_update(message[1:])
+        elif ('3' == message[0]):
+            self.send_info_client(message[1:], sock)
 
     def read_logfile(self, logfile):
         while ('' != logfile):
@@ -90,7 +104,7 @@ s    @classmethod
             item_ID = line[0]            
 
             # Adds item ID to item list
-            self.all_itens_ID.append(item_ID)
+            self.itens_list.append(item_ID)
 
             # Gets warehouses lists
             # Line[1] = [ [WarehouseID|Qtt], [WarehouseID, Qtt] ]
@@ -145,8 +159,7 @@ s    @classmethod
         item_ID = message[1]
         item_name = message[2]
         qtt = message[3]
-        value = [warehouse_ID, qtt, item_name]
-
+        value = [warehouse_ID, qtt]
 
         # If item is on server, checks if there's data about that warehouse already.
         # If there is, update qtt.
@@ -165,7 +178,7 @@ s    @classmethod
             # If warehouse is present    
             if (index != -1):
                 # Updates qtt. If qtt*-1 > actual qtt, means remove all items.
-                if (qtt*-1 >= self.itens[item_ID][1]):
+                if (qtt*-1 >= self.itens[item_ID][index][1]):
                     self.itens[item_ID][index][1] = 0
                 # If not to remove all, update qtt:
                 else:
@@ -176,8 +189,32 @@ s    @classmethod
         # If item isn't on server
         else:
             # Adds item to dictionary
-            self.itens[itemID] = [value]
-        
+            self.itens[itemID] = [[item_name], [value]]
+
+    def send_info_client(self, sock):
+        """
+        Sends info to the client upon request
+        # Answer: [ [itemID, itemName, qtt], [itemID, itemName, qtt] ] "itemID;itemName;Qtt|itemID..."
+        """
+        answer = ''
+        # # Mounts answer
+        # Go through all itens in the server
+        for item in self.itens_list:
+            answer.append(item + space_char + self.itens[item][0] + space_char) # ItemID;Item_name
+
+            # Find out how many items in total counting all warehouses
+            total_qtt = 0
+            for warehouses in self.itens[item][1:]:
+                total_qtt += warehouses[1]
+             
+            # Add total qtt for item
+            answer.append( str(total_qtt) + list_itens )
+
+        # # Sends answer
+        sock.send(answer.encode('utf-8'))
+        print("Enviado: " + answer)
+        return
+
 
 server = Server()
 print("ID classe:" + str(Server.server_ID))

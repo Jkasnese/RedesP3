@@ -6,7 +6,7 @@ class Warehouse:
     def __init__():
         # Warehouse atributes
         self.warehouse_id = 0 # How do I generate sequential warehouse ids?
-        self.itens = [] # Itens list. Each item is a list. 0 ID, 1 Name, 2 Qtt, 3 Warehouses that has the item
+        self.itens = [] # Itens list. Each item is a list. 0 ID, 1 Name, 2 Qtt
         
         # Asks servers multicast address for future msgs
         self.servers_multicast_address = input("Digite o endereco de multicast dos servidores: ")
@@ -67,3 +67,6 @@ class Warehouse:
         for i in self.itens:
             # Writes: ID NAME QTT\n
             database.write(i[0] + space_char + i[1] + space_char + i[2] + '\n')
+
+warehouse = Warehouse()
+warehouse.register_itens("nesquives", 20)
