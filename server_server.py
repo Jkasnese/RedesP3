@@ -1,6 +1,8 @@
 from util_com import *
 import uuid
+from queue import Queue
 from threading import Thread
+
 
 class Server:
     """
@@ -25,6 +27,24 @@ class Server:
         self.server_multicast_socket = self.join_multicast_server()
         thread_listen_group = Thread(target = self.listen_messages, args=())
         thread_listen_group.start()
+
+        # # TCP, for communicating with client
+
+        # Open socket
+        self.tcp_sock = open_TCP_socket()
+
+        # Listen to 10 simultaneos connections
+        self.tcp_sock.listen(10) 
+
+        # Acepts connections and puts new socket (the connection socket) into the thread safe queue
+        connections_list = Queue()
+        thread_open_connections = Thread(target = accept_connections, args=(self.tcp_sock, connections_list))
+        thread_open_connections.start()
+
+        # Socket é retirado da fila e passado para função de ouvir, p/ que servidor registre as mensagens do socket.
+        # Recebe tupla contendo socket e endereço
+        thread_handle_messages = Thread(target = self.handle_tcp_connections, args=(connections_list,))
+        thread_handle_messages.start()
 
         # # # # # SERVER LOG # # # # # 
         # Log file.
@@ -51,6 +71,13 @@ s    @classmethod
         self.port = int(input("Digite a porta p se conectar ao grupo multicast: "))
         self.my_ip_addr = input("Digite seu IP: ")
         return create_multicast_socket(self.group, self.port, self.my_ip_addr)
+
+    def handle_tcp_connections(self, connections_list):
+        while True:
+            sock = connections_list.get()[0]
+            thread_tcp_listener = Thread(target = self.listen_messages, args=(sock))
+            self.threads_ouvintes_TCP[bocal] = thread_tcp_listener
+            thread_tcp_listener.start()
 
     def listen_messages(self, sock):
         """
