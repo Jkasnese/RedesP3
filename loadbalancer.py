@@ -1,4 +1,4 @@
-import util_com
+from util_com import *
 from queue import Queue
 from threading import Thread
 
@@ -7,7 +7,7 @@ class Load_Balancer():
     Receives connections and distributes the connection to the servers
     """
 
-    def __init__():
+    def __init__(self):
 
         # Create server list
         self.servers = []
@@ -19,7 +19,7 @@ class Load_Balancer():
         
         # # # # Create TCP connection # # # # 
         # Open socket
-        self.sock = open_TCP_socket()
+        self.sock = open_TCP_socket(int(input("Digite a porta para se conectar ao balanceador de carga: ")))
 
         # Listen to 10 simultaneos connections
         self.sock.listen(10) 
@@ -37,14 +37,17 @@ class Load_Balancer():
     def handle_connections(self, connections_list):
         while True:
             sock = connections_list.get()
-            addr = bocal[1]
-            sock = bocal[0]
+            addr = sock[1]
+            sock = sock[0]
             
             # Sends to the client the server address
-            send_msg(self.servers[self.index], addr[0], addr[1], sock)
+            server_addr = self.servers[self.index]
+            send_msg(server_addr, addr[0], addr[1], sock)
+            print("Enviado: " + server_addr)
             # Changes next server to be sent
             if (self.index == len(self.servers)-1):
                 self.index = 0
             else:
                 self.index += 1
 
+load = Load_Balancer()
