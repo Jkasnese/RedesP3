@@ -63,7 +63,7 @@ class Client():
         # Waits for answer
         answer = listen_TCP(self.tcp_socket)
     
-        if ('0' == answer):
+        if (0 == answer):
             print("Proceed to payment methods!")
         else:
             print("O item que voce requisitou nao pode ser comprado, pois ja acabou o estoque: " + item_ID)
