@@ -43,7 +43,7 @@ def create_multicast_socket(group, port, ip):
 def listen_socket(sock):
     """ From the received socket return data and address of sender s"""
     while True:
-        data, addr = sock.recvfrom(24) # Buffer size 1024
+        data, addr = sock.recvfrom(2048) # Buffer size 2048
         return bytes.decode(data), addr
 
 def send_msg(message, addr, port, sock=''):
@@ -81,7 +81,7 @@ def open_TCP_socket(port=8080, host=''):
     #   - - - Atribuindo dados ao socket - - - 
     try:
         # Atribuindo ao meu socket atual o nome HOST e a porta do socket.
-        bocal.bind((host, porta))
+        bocal.bind((host, port))
     except socket.error as msg:
         print ('Erro na atribuicao. Codigo: ' + str(msg[0]) + ' Mensagem: ' + msg[1])
         sys.exit()

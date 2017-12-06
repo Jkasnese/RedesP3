@@ -1,5 +1,5 @@
-import util_com
-import util_app_protocol
+from util_com import *
+from util_app_protocol import *
 
 class Client():
     

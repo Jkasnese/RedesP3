@@ -1,3 +1,4 @@
+from util_app_protocol import *
 from util_com import *
 import uuid
 from queue import Queue
@@ -25,7 +26,7 @@ class Server:
         # # UDP
         # Server joins multicast group
         self.server_multicast_socket = self.join_multicast_server()
-        thread_listen_group = Thread(target = self.listen_messages, args=())
+        thread_listen_group = Thread(target = self.listen_messages, args=(self.server_multicast_socket,))
         thread_listen_group.start()
 
         # # TCP, for communicating with client
@@ -38,14 +39,16 @@ class Server:
 
         # Acepts connections and puts new socket (the connection socket) into the thread safe queue
         connections_list = Queue()
-        thread_open_connections = Thread(target = accept_connections, args=(self.tcp_sock, connections_list))
+        thread_open_connections = Thread(target = accept_connections, args=(self.tcp_sock, connections_list) )
         thread_open_connections.start()
 
         # Socket é retirado da fila e passado para função de ouvir, p/ que servidor registre as mensagens do socket.
         # Recebe tupla contendo socket e endereço
+        print("Cade os print")
         thread_handle_messages = Thread(target = self.handle_tcp_connections, args=(connections_list,))
         thread_handle_messages.start()
-
+        print("Ja passou")
+    
         # # # # # SERVER LOG # # # # # 
         # Log file.
         # Appends new logs to file in case it exists, meaning the server lost connection, and attempts to recover lost messages during disconnect time
@@ -59,7 +62,7 @@ class Server:
 
         # Memory data
         
-s    @classmethod
+    @classmethod
     def increase_ID(klass):
         Server.server_ID += 1
         
@@ -75,7 +78,7 @@ s    @classmethod
     def handle_tcp_connections(self, connections_list):
         while True:
             sock = connections_list.get()[0]
-            thread_tcp_listener = Thread(target = self.listen_messages, args=(sock))
+            thread_tcp_listener = Thread(target = self.listen_messages, args=(sock,))
             self.threads_ouvintes_TCP[bocal] = thread_tcp_listener
             thread_tcp_listener.start()
 
@@ -148,7 +151,7 @@ s    @classmethod
                 warehouses_list.append([warehouse_info[0],warehouse_info[1]])
                 
             # Add item to dictionary
-            self.itens{item_ID} = warehouse_list
+            self.itens[item_ID] = warehouse_list
 
     def reconnect(self):
         """
@@ -185,7 +188,7 @@ s    @classmethod
         warehouse_ID = message[0]
         item_ID = message[1]
         item_name = message[2]
-        qtt = message[3]
+        qtt = int(message[3])
         value = [warehouse_ID, qtt]
 
         # If item is on server, checks if there's data about that warehouse already.
@@ -207,16 +210,21 @@ s    @classmethod
                 # Updates qtt. If qtt*-1 > actual qtt, means remove all items.
                 if (qtt*-1 >= self.itens[item_ID][index][1]):
                     self.itens[item_ID][index][1] = 0
+                    print("Estoque zerado para: " + item_ID)
                 # If not to remove all, update qtt:
                 else:
                     self.itens[item_ID][index][1] += qtt
+                    print(item_ID + " modificado com " + str(qtt))
             # If warehouse is not present, adds warehouse
             else:
                 self.itens[item_ID].append(value)
+                print("Adicionado mais um deposito para o item " + item_ID)
         # If item isn't on server
         else:
             # Adds item to dictionary
-            self.itens[itemID] = [[item_name], [value]]
+            self.itens[item_ID] = [[item_name], [value]]
+            print("Adicionado o item " + item_ID)
+            print("Quantidade: " + str(qtt))
 
     def send_info_client(self, sock):
         """
