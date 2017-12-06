@@ -19,7 +19,7 @@ class Server:
         # Defines server ID
         self.serverID = str(Server.server_ID)
         self.increase_ID()
-        self.itens = {} # Key: item ID. Value: [[item_Name], [WarehouseID, Qtt], [WarehouseID, Qtt] ]
+        self.itens = {} # Key: item ID. Value: [item_Name, [WarehouseID, Qtt], [WarehouseID, Qtt] ]
         self.itens_list = []
 
         # # # # # COMMUNICATION # # # # #
@@ -33,7 +33,7 @@ class Server:
 
         # Open socket
         self.thread_tcp_sockets = {}
-        self.tcp_sock = open_TCP_socket()
+        self.tcp_sock = open_TCP_socket(int(input("Digite a porta TCP para se conectar ao servidor: ")))
 
         # Listen to 10 simultaneos connections
         self.tcp_sock.listen(10) 
@@ -125,7 +125,9 @@ class Server:
         elif ('2' == message[0]):
             self.warehouse_update(message[1:])
         elif ('3' == message[0]):
-            self.send_info_client(message[1:], sock)
+            self.send_info_client(sock)
+        elif('4' == message[0]):
+            self.confirm_payment(message[1:], sock)
 
     def read_logfile(self, logfile):
         while ('' != logfile):
@@ -223,9 +225,12 @@ class Server:
         # If item isn't on server
         else:
             # Adds item to dictionary
-            self.itens[item_ID] = [[item_name], [value]]
+            self.itens[item_ID] = [item_name, value]
             print("Adicionado o item " + item_ID)
             print("Quantidade: " + str(qtt))
+
+            # Adds item to item list
+            self.itens_list.append(item_ID)
 
     def send_info_client(self, sock):
         """
@@ -235,8 +240,13 @@ class Server:
         answer = ''
         # # Mounts answer
         # Go through all itens in the server
+        print("Item list: ")
+        print(self.itens)
         for item in self.itens_list:
-            answer.append(item + space_char + self.itens[item][0] + space_char) # ItemID;Item_name
+            print("Itens ITEM: ")
+            print(self.itens[item])
+
+            answer += item + space_char + self.itens[item][0] + space_char # ItemID;Item_name
 
             # Find out how many items in total counting all warehouses
             total_qtt = 0
@@ -244,12 +254,36 @@ class Server:
                 total_qtt += warehouses[1]
              
             # Add total qtt for item
-            answer.append( str(total_qtt) + list_itens )
+            answer += str(total_qtt) + list_itens
 
         # # Sends answer
         sock.send(answer.encode('utf-8'))
         print("Enviado: " + answer)
         return
+
+    def confirm_payment(self, message, sock):
+        """
+        Confirms to the client if his purchase is okay or nay
+        """
+        message = message.split(space_char)
+        item_ID = message[0]
+        buy_qtt = message[1]
+
+        # Finds out qtt of itens in server across warehouses:
+        server_qtt = 0
+        for i in self.itens[item_ID][1:]:
+            server_qtt += i[1]
+
+        # If qtt of item available > qtt wanting to purchase, allow:
+        if (buy_qtt <= server_qtt):
+            answer = '0'
+            print("Foram comprados " + buy_qtt + " do item " + item_ID)
+        else:
+            answer = '-1'
+
+        sock.send(answer.encode('utf-8'))
+        print("Enviado: " + answer)
+        return       
 
 
 server = Server()
