@@ -13,7 +13,7 @@ class Load_Balancer():
         self.servers = []
         self.index = 0
         number_of_servers = int(input("Digite a quantidade de servidores: "))
-        for i in range(number_of_servers-1):
+        for i in range(number_of_servers):
             server = input("Digite o endereco do servidor: ") # Server addrs
             self.servers.append(server)
         
@@ -48,3 +48,4 @@ class Load_Balancer():
             else:
                 self.index += 1
 
+load = Load_Balancer()

@@ -13,8 +13,6 @@ list_itens = '|'
     # Answer: [ [itemID, itemName, qtt], [itemID, itemName, qtt] ] "itemID;itemName;Qtt|itemID..."
 # 4 = Client requests buying item
     #Message: 4itemID;qtt
-    # Answer: 0 if ok
-            # anything else if not
 
 
 #  = Redirect client to server

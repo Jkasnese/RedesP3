@@ -48,3 +48,4 @@ class Load_Balancer():
             else:
                 self.index += 1
 
+load = Load_Balancer()
